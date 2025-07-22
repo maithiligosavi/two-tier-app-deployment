@@ -6,50 +6,49 @@ This project demonstrates how to **deploy a two-tier Flask web application** usi
 - A **MySQL database**
 - Managed using **Docker Compose** for seamless container orchestration
 
-# ⚙️ How I deployed?
+---
 
-## Step 1: Clone the App Code
+# ⚙️ How I Deployed It
 
-The original Flask app was cloned from a public GitHub repository.
+## 🧩 Step 1: Clone the App Code
+
+The original Flask app was cloned from a public GitHub repository:
+
 git clone https://github.com/LondheShubham153/two-tier-flask-app.git
+
 cd two-tier-flask-app
 
-## Step 2: Create a Dockerfile
-A Dockerfile was created to define how the Flask application should be containerized. This includes installing dependencies and specifying the command to run the app:-
-# Use an official Python runtime as the base image
+🐳 Step 2: Create a Dockerfile
+A Dockerfile was created to define how the Flask application should be containerized. It installs system and Python dependencies and runs the app.
+
 FROM python:3.9-slim
 
-# Set the working directory in the container
 WORKDIR /app
 
-# install required packages for system
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y gcc default-libmysqlclient-dev pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file into the container
 COPY requirements.txt .
 
-# Install app dependencies
 RUN pip install mysqlclient
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
 COPY . .
 
-# Specify the command to run your application
 CMD ["python", "app.py"]
 
-
-
-## Step 3: Write docker-compose.yml
-A docker-compose.yml file was created to define and run the Flask app and the MySQL database as separate services. This included service configuration, environment variables, volumes, health checks, and networking:-
+🧬 Step 3: Write docker-compose.yml
+A docker-compose.yml file was created to define and run the Flask app and the MySQL database as separate services. It includes service configuration, environment variables, health checks, and volumes.
 
 version: "3.8"
 
+
 services:
+
   mysql:
+	
     user: "${UID}:${GID}" 
     image: mysql:5.7
     container_name: mysql
@@ -69,8 +68,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+			
 
   flask-app:
+	
     image: trainwithshubham/two-tier-flask-app:latest
     container_name: flask-app
     ports:
@@ -91,23 +92,27 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+			
 
 networks:
   twotier:
+	
 
-
-## Step 4: Add .gitignore to Exclude MySQL Data
-To avoid committing database runtime files, a .gitignore file was created with:
+📂 Step 4: Add .gitignore to Exclude MySQL Data
+To avoid committing MySQL runtime files, a .gitignore file was created with:
 mysql-data/
 
-## Step 5: Build and Run the Containers
-Used Docker Compose to build and run both containers:
+🛠️ Step 5: Build and Run the Containers
+Run the following command to build and start both containers:
 docker-compose up --build
 
-## Step 6: Access the Application
-Once running, the Flask app was accessible.
-It successfully connected to the MySQL database container.
+🌐 Step 6: Access the Application
+Once running, access the Flask app in your browser.
 
-##  Step 7: Stopping and Cleaning Up
-To stop the containers:
+🧹 Step 7: Stop and Clean Up
+To stop and remove containers:
 docker-compose down
+To also remove named volumes:
+docker-compose down -v
+
+
