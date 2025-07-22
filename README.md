@@ -99,20 +99,33 @@ networks:
 	
 
 📂 Step 4: Add .gitignore to Exclude MySQL Data
+
 To avoid committing MySQL runtime files, a .gitignore file was created with:
+
 mysql-data/
 
+
 🛠️ Step 5: Build and Run the Containers
+
 Run the following command to build and start both containers:
+
 docker-compose up --build
 
+
 🌐 Step 6: Access the Application
+
 Once running, access the Flask app in your browser.
 
+
 🧹 Step 7: Stop and Clean Up
+
 To stop and remove containers:
+
 docker-compose down
+
 To also remove named volumes:
+
 docker-compose down -v
+
 
 
