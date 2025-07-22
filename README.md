@@ -1,134 +1,113 @@
-<<<<<<< HEAD
- 
-# Flask App with MySQL Docker Setup
+# 🚀 Two-Tier Flask Web App Deployment using Docker
 
-This is a simple Flask app that interacts with a MySQL database. The app allows users to submit messages, which are then stored in the database and displayed on the frontend.
+This project demonstrates how to **deploy a two-tier Flask web application** using Docker. The application consists of:
 
-## Prerequisites
+- A **Flask-based web app** (cloned from an existing repo)
+- A **MySQL database**
+- Managed using **Docker Compose** for seamless container orchestration
 
-Before you begin, make sure you have the following installed:
+# ⚙️ How I deployed?
 
-- Docker
-- Git (optional, for cloning the repository)
+## Step 1: Clone the App Code
 
-## Setup
+The original Flask app was cloned from a public GitHub repository.
+git clone https://github.com/LondheShubham153/two-tier-flask-app.git
+cd two-tier-flask-app
 
-1. Clone this repository (if you haven't already):
+## Step 2: Create a Dockerfile
+A Dockerfile was created to define how the Flask application should be containerized. This includes installing dependencies and specifying the command to run the app:-
+# Use an official Python runtime as the base image
+FROM python:3.9-slim
 
-   ```bash
-   git clone https://github.com/your-username/your-repo-name.git
-   ```
+# Set the working directory in the container
+WORKDIR /app
 
-2. Navigate to the project directory:
+# install required packages for system
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y gcc default-libmysqlclient-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-   ```bash
-   cd your-repo-name
-   ```
+# Copy the requirements file into the container
+COPY requirements.txt .
 
-3. Create a `.env` file in the project directory to store your MySQL environment variables:
+# Install app dependencies
+RUN pip install mysqlclient
+RUN pip install --no-cache-dir -r requirements.txt
 
-   ```bash
-   touch .env
-   ```
+# Copy the rest of the application code
+COPY . .
 
-4. Open the `.env` file and add your MySQL configuration:
+# Specify the command to run your application
+CMD ["python", "app.py"]
 
-   ```
-   MYSQL_HOST=mysql
-   MYSQL_USER=your_username
-   MYSQL_PASSWORD=your_password
-   MYSQL_DB=your_database
-   ```
 
-## Usage
 
-1. Start the containers using Docker Compose:
+## Step 3: Write docker-compose.yml
+A docker-compose.yml file was created to define and run the Flask app and the MySQL database as separate services. This included service configuration, environment variables, volumes, health checks, and networking:-
 
-   ```bash
-   docker-compose up --build
-   ```
+version: "3.8"
 
-2. Access the Flask app in your web browser:
+services:
+  mysql:
+    user: "${UID}:${GID}" 
+    image: mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: devops
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./message.sql:/docker-entrypoint-initdb.d/message.sql  
+    networks:
+      - twotier
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
-   - Frontend: http://localhost
-   - Backend: http://localhost:5000
+  flask-app:
+    image: trainwithshubham/two-tier-flask-app:latest
+    container_name: flask-app
+    ports:
+      - "5000:5000"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DB: devops
+    depends_on:
+      - mysql
+    networks:
+      - twotier
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-3. Create the `messages` table in your MySQL database:
+networks:
+  twotier:
 
-   - Use a MySQL client or tool (e.g., phpMyAdmin) to execute the following SQL commands:
-   
-     ```sql
-     CREATE TABLE messages (
-         id INT AUTO_INCREMENT PRIMARY KEY,
-         message TEXT
-     );
-     ```
 
-4. Interact with the app:
+## Step 4: Add .gitignore to Exclude MySQL Data
+To avoid committing database runtime files, a .gitignore file was created with:
+mysql-data/
 
-   - Visit http://localhost to see the frontend. You can submit new messages using the form.
-   - Visit http://localhost:5000/insert_sql to insert a message directly into the `messages` table via an SQL query.
+## Step 5: Build and Run the Containers
+Used Docker Compose to build and run both containers:
+docker-compose up --build
 
-## Cleaning Up
+## Step 6: Access the Application
+Once running, the Flask app was accessible.
+It successfully connected to the MySQL database container.
 
-To stop and remove the Docker containers, press `Ctrl+C` in the terminal where the containers are running, or use the following command:
-
-```bash
+##  Step 7: Stopping and Cleaning Up
+To stop the containers:
 docker-compose down
-```
-
-## To run this two-tier application using  without docker-compose
-
-- First create a docker image from Dockerfile
-```bash
-docker build -t flaskapp .
-```
-
-- Now, make sure that you have created a network using following command
-```bash
-docker network create twotier
-```
-
-- Attach both the containers in the same network, so that they can communicate with each other
-
-i) MySQL container 
-```bash
-docker run -d \
-    --name mysql \
-    -v mysql-data:/var/lib/mysql \
-    --network=twotier \
-    -e MYSQL_DATABASE=mydb \
-    -e MYSQL_ROOT_PASSWORD=admin \
-    -p 3306:3306 \
-    mysql:5.7
-
-```
-ii) Backend container
-```bash
-docker run -d \
-    --name flaskapp \
-    --network=twotier \
-    -e MYSQL_HOST=mysql \
-    -e MYSQL_USER=root \
-    -e MYSQL_PASSWORD=admin \
-    -e MYSQL_DB=mydb \
-    -p 5000:5000 \
-    flaskapp:latest
-
-```
-
-## Notes
-
-- Make sure to replace placeholders (e.g., `your_username`, `your_password`, `your_database`) with your actual MySQL configuration.
-
-- This is a basic setup for demonstration purposes. In a production environment, you should follow best practices for security and performance.
-
-- Be cautious when executing SQL queries directly. Validate and sanitize user inputs to prevent vulnerabilities like SQL injection.
-
-- If you encounter issues, check Docker logs and error messages for troubleshooting.
-
-```
-
-=======
-# two-tier-app-deployment
->>>>>>> 3b5c0be7e05db923556625e34213fac375082190
